@@ -19,8 +19,9 @@ setup(
     author = 'Nagarjun R',
     author_email = 'nagarjunramakrishnan10@gmail.com',
     description = "A project for flight fare prediction",
-    packages = find_packages(where='src'),
-    package_dir = {'':'src'},
+    # packages = find_packages(where="src"),
+    # package_dir = {"" : "src"},
+    packages=find_packages(),
     install_requires = get_requirements(file_name='requirements.txt')
     
 )
