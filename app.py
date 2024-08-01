@@ -6,6 +6,7 @@ from src.utils import load_object, get_transformed_df
 from src.exception import CustomException
 from src.logger import logging
 from src.pipeline.predict_pipeline import CustomDataObject
+from datetime import datetime
 
 
 airlines = ['IndiGo', 'Air India', 'Jet Airways', 'SpiceJet',
@@ -49,7 +50,7 @@ def main() -> None:
         destination: str = col1.selectbox('Destination', destinations)
         total_stops: str = col1.selectbox('Total stops', total_stops_list)
 
-        date_of_journey: str = col2.date_input('Date of Journey')
+        date_of_journey: str = col2.date_input('Date of Journey', min_value=datetime(2019, 1, 1), max_value=datetime(2019, 6,30))
         duration: str = col2.text_input('Duration',placeholder='2h 15m')
         arrival_time: str = col2.text_input('Arrival time', placeholder='02:50')
         dep_time: str = col2.text_input('Departure time', placeholder='22:50')
@@ -59,6 +60,10 @@ def main() -> None:
         button = st.form_submit_button('Predict', type='primary', use_container_width=True)
     
     if button:
+
+        if not all([duration, dep_time, arrival_time]):
+            st.error('All fields are required..')
+            st.stop()
        
         obj = CustomDataObject(airline, source, destination, additional_info, total_stops,
                                date_of_journey, duration, arrival_time, dep_time)
@@ -69,12 +74,12 @@ def main() -> None:
             
             res = model.predict(transformed_X)
 
-            st.latex(f'The Approximate Fare of this flight is:  {res[0]: .4f}')
+            st.title(f'The Approximate Fare of this flight is:  {res[0]: .2f}')
         
         except Exception as e:
             logging.error(e)
             st.error('Give values in the correct format')
-            raise CustomException(e, sys)
+            # raise CustomException(e, sys)
             
 
     
