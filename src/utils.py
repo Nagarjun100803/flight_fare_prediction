@@ -1,7 +1,12 @@
 import pickle
 import numpy as np
 import pandas as pd 
+from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.model_selection import GridSearchCV
+from sklearn.tree import DecisionTreeRegressor
 
 
 
@@ -21,10 +26,70 @@ def get_transformed_df(array: np.ndarray):
     transformed_df = pd.DataFrame(array,
                                 columns=['airline', 'source', 'destination', 'additional_info', 
                                         'duration', 'total_stops', 'journey_day', 'journey_month',
-                                        'arrival_hour','arrival_minute', 'departure_hour' ,'departure_minute',
-                                        'price'])
+                                        'arrival_hour','arrival_minute', 'departure_hour' ,'departure_minute'
+                                        ])
     return transformed_df.astype(int)
+
+def evaluate_models(X_train, X_test, y_train, y_test) -> dict :
+
+        models = {
+
+        'Linear Regression': LinearRegression(),
+        'Lasso': Lasso(),
+        'Ridge': Ridge(),
+        'Decision Tree Regressor' : DecisionTreeRegressor(),
+        'Random Forest Regressor' : RandomForestRegressor()
+        }
+
+
+        params = {
+
+            'Linear Regression' : {},
+            'Decision Tree Regressor' : {
+                'criterion' : ['squared_error', 'absolute_error'],
+            },
+            'Ridge' : {
+                'alpha' : [.0001, .001, .01, 1, 10]
+            },
+            'Lasso' : {
+                'alpha' : [.0001, .001, .01, 1, 10]
+            },
+            'Random Forest Regressor' : {
+                'criterion' : ['squared_error', 'absolute_error']
+            }
+        }   
+
     
+        reports = {}
+    
+        for estimator_name, estimator in models.items():
+            est: BaseEstimator = estimator
+            print(f"Model {estimator_name} is taken")
+            grid = GridSearchCV(est, 
+                                param_grid=params[estimator_name],
+                                scoring='neg_mean_squared_error', 
+                                verbose=3, cv=2)
+            grid.fit(X_train, y_train)
+
+            est.set_params(**grid.best_params_)
+
+            est.fit(X_train, y_train)
+
+            train_score = est.score(X_train, y_train)
+            test_score  = est.score(X_test, y_test)
+
+            print(f'{estimator_name} is train score is {round(train_score*100, 2)}')
+            print(f'{estimator_name} is test score is {round(test_score*100, 2)}')
+
+            print('\n')
+            print('='*100)
+            
+            reports[estimator_name] = {'train_score':round(train_score*100, 6), 'test_score': round(test_score*100, 6), 
+                                    'params': grid.best_params_, 'estimator': est}
+    
+        return reports
+    
+
 def extract_day_and_month(X: pd.Series) : 
     X = X.astype('datetime64[ns]')
     return pd.DataFrame(
